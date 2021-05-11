@@ -20,42 +20,77 @@ fn interactive() {
     loop {
         println!("What would you like to do. You can use the number or text command \n  1 - play     | Play a playlist \n  2 - playlist | Generates playlist for mpv \n  3 - convert  | Converts mp4's into mp3's \n  4 - exit     | Exits the application");
         let mut action = String::new();
-
+        
         io::stdin()
             .read_line(&mut action)
             .expect("Failed to read action");
+        let action_length = &action.len() - 2;
 
-        match &action[..] {
+        match &action[..action_length] {
             "play" | "1" => {
+                println!("give me a tag to play BB");
                 io::stdin()
                     .read_line(&mut action)
                     .expect("Failed to read argument");
+                let tag = remove_action(&action);
                 let mut playlist = String::from(get_home());
                 playlist.push_str("\\Documents\\playlists\\");
-                playlist.push_str(&action);
+                playlist.push_str(&tag);
                 playlist.push_str(".txt");
                 play_music(playlist);
             },
-            "convert" | "2" => {
+            "convert" | "3" => {
+                println!("give me a tag to convert beautiful");
                 io::stdin()
                     .read_line(&mut action)
                     .expect("Failed to read argument");
-                let videos = get_videos(&action);
-                convert_mp4s(videos, action);
+                let tag = remove_action(&action);
+                let videos = get_videos(&tag);
+                convert_mp4s(videos, tag);
             },
-            "playlist" | "3" => {
+            "playlist" | "2" => {
+                println!("give me a tag to playlistify KING");
                 io::stdin()
                     .read_line(&mut action)
                     .expect("Failed to read argument");
-                let videos = get_videos(&action);
-                write_playlist(videos, action);
+                let tag = remove_action(&action);
+                let videos = get_videos(&tag);
+                write_playlist(videos, tag);
             },
-            "exit" | "4" => break,
-            _ => {
+            "exit" | "4" => {
+                println!("Smell ya later nerd");
+                break;
+            },
+            _=> {
                 print!("\x1B[2J\x1B[1;1H");
-                println!("Unknown action: {}", action)
+                println!("Unknown action: {}", action);
             },
         }
+    }
+}
+
+fn handle_arguments(args: Vec<String>) {
+    let mut music_dir = String::from(get_home());
+    music_dir.push_str("\\Music\\");
+    let action = args[0].to_string();
+    //println!("Arguments: {:?}", args);
+    match action.as_str() {
+        "play" => {
+            let mut playlist = String::from(get_home());
+            playlist.push_str("\\Documents\\playlists\\");
+            playlist.push_str(&args[1].to_string());
+            playlist.push_str(".txt");
+            play_music(playlist);
+        },
+        "playlist" => {
+            let videos = get_videos(&args[1].to_string());
+            write_playlist(videos, args[1].to_string());
+        },
+        "convert" => {
+            let videos = get_videos(&args[1].to_string());
+            convert_mp4s(videos, args[1].to_string());
+        },
+        _=> println!("Unknown argument {}", args[0])
     }
 }
 
@@ -75,31 +110,6 @@ fn play_music(playlist: String) {
     match process.stdout.unwrap().read_to_string(&mut s) {
         Err(why) => panic!("Couldn't read ffmpeg stdout: {}", why),
         Ok(_) => print!("{}", s), 
-    }
-}
-
-fn handle_arguments(args: Vec<String>) {
-    let mut music_dir = String::from(get_home());
-    music_dir.push_str("\\Music\\");
-    let action = args[0].to_string();
-    //println!("Arguments: {:?}", args);
-    match action.as_str() {
-        "play" => {
-            let mut playlist = String::from(get_home());
-                playlist.push_str("\\Documents\\playlists\\");
-                playlist.push_str(&args[1].to_string());
-                playlist.push_str(".txt");
-                play_music(playlist);
-        },
-        "playlist" => {
-            let videos = get_videos(&args[1].to_string());
-            write_playlist(videos, args[1].to_string());
-        },
-        "convert" => {
-            let videos = get_videos(&args[1].to_string());
-            convert_mp4s(videos, args[1].to_string());
-        },
-        _=> println!("Unknown argument {}", args[0])
     }
 }
 
@@ -205,4 +215,19 @@ fn get_home() -> String {
         Some(path) => return path.display().to_string(),
         None => return String::new(),
     }
+}
+
+fn remove_action(x: &String) -> String {
+    let mut start = 0;
+    for character in x.chars() {
+        start+=1;
+        match character {
+            '\n' => break,
+            _ => println!("Figure how not to do anything here, without compiler crying its tits off"),
+        }
+    }
+    let mut first_substring = String::new();
+    first_substring.push_str(&x[start..]);
+    let final_substring = first_substring.replace("\r\n", "");
+    return final_substring;
 }
