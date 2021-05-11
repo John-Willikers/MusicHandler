@@ -1,13 +1,11 @@
 extern crate glob;
 use self::glob::glob;
-use std::{ env, fs, path::Path };
-use std::fs::File;
-use std::io::prelude::*;
+use std::{ env, fs, path::Path, fs::File, io::prelude::*, process::Command, process::Stdio };
 
-struct Song {
-    video: String,
-    music: String,
-    tag: String
+struct Song<'a> {
+    video: &'a Path,
+    music: &'a Path,
+    tag: &'a String
 }
 
 fn main() {
@@ -22,7 +20,51 @@ fn main() {
             let videos = get_videos(args[1].to_string());
             write_playlist(videos, args[1].to_string());
         },
+        "convert" => {
+            let videos = get_videos(args[1].to_string());
+            convert_mp4s(videos, args[1].to_string());
+        },
         _=> println!("Unknown argument {}", args[0])
+    }
+}
+
+fn convert_mp4s(files: Vec<String>, tag: String) {
+    for file in files {
+        println!("Beginning to convert: {}", file);
+        let local_path: Vec<&str> = file.split("\\").skip(4).collect();
+        let joined = local_path.join("\\");
+        let mut music_path = String::from(get_home());
+        music_path.push_str("\\Music\\");
+        music_path.push_str(&joined);
+        music_path = music_path.replace(".mp4", ".mp3");
+        // let song = make_song(&file, &music_path, &tag);
+        let song = Song {
+            video: Path::new(&file),
+            music: Path::new(&music_path),
+            tag: &tag
+        };
+
+        match song.music.exists() {
+            true => Ok(fs::remove_file(song.music)),
+            false => Err(false)
+        };
+
+        let process = match Command::new("ffmpeg")
+            .args(&["-y", "-i", &song.video.display().to_string(), &song.music.display().to_string()])
+            .stdout(Stdio::piped())
+            .spawn() {
+                Err(why) => panic!("couldn't spawn ffmpeg: {}", why),
+                Ok(process) => process,
+        };
+
+        let mut s = String::new();
+        match process.stdout.unwrap().read_to_string(&mut s) {
+            Err(why) => panic!("Couldn't read ffmpeg stdout: {}", why),
+            Ok(_) => print!("{}", s), 
+        }
+        // let _output = Command::new("cmd")
+        //     .output()
+        //     .expect("Failed to starts CMD");
     }
 }
 
@@ -48,7 +90,7 @@ fn write_playlist(files: Vec<String>, tag: String) {
 
     match file.write_all(file_contents.as_bytes()) {
         Err(why) => panic!("couldn't write to {}: {}", display, why),
-        Ok(file) => println!("successfully wrote to {}", display),
+        Ok(_file) => println!("successfully wrote to {}", display),
     }
 }
 
@@ -81,14 +123,6 @@ fn get_files(dir: String) -> Vec<String> {
     }
     
     return results;
-}
-
-fn make_song(video: String, music: String, tag: String) -> Song {
-    Song {
-        video: video,
-        music: music,
-        tag: tag
-    }
 }
 
 fn get_home() -> String {
