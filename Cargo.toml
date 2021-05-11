@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 home = "0.5.3"
-num_cpus = "1.13.0"
 glob = "0.3.0"
