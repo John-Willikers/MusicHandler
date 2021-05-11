@@ -1,6 +1,6 @@
 extern crate glob;
 use self::glob::glob;
-use std::{ env, fs, path::Path, fs::File, io::prelude::*, process::Command, process::Stdio };
+use std::{ env, fs, io, path::Path, fs::File, io::prelude::*, process::Command, process::Stdio };
 
 struct Song<'a> {
     video: &'a Path,
@@ -10,18 +10,93 @@ struct Song<'a> {
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
-    
+    match args.len() {
+        0 => interactive(),
+        _ => handle_arguments(args)
+    };
+}
+
+fn interactive() {
+    loop {
+        println!("What would you like to do. You can use the number or text command \n  1 - play     | Play a playlist \n  2 - playlist | Generates playlist for mpv \n  3 - convert  | Converts mp4's into mp3's \n  4 - exit     | Exits the application");
+        let mut action = String::new();
+
+        io::stdin()
+            .read_line(&mut action)
+            .expect("Failed to read action");
+
+        match &action[..] {
+            "play" | "1" => {
+                io::stdin()
+                    .read_line(&mut action)
+                    .expect("Failed to read argument");
+                let mut playlist = String::from(get_home());
+                playlist.push_str("\\Documents\\playlists\\");
+                playlist.push_str(&action);
+                playlist.push_str(".txt");
+                play_music(playlist);
+            },
+            "convert" | "2" => {
+                io::stdin()
+                    .read_line(&mut action)
+                    .expect("Failed to read argument");
+                let videos = get_videos(&action);
+                convert_mp4s(videos, action);
+            },
+            "playlist" | "3" => {
+                io::stdin()
+                    .read_line(&mut action)
+                    .expect("Failed to read argument");
+                let videos = get_videos(&action);
+                write_playlist(videos, action);
+            },
+            "exit" | "4" => break,
+            _ => {
+                print!("\x1B[2J\x1B[1;1H");
+                println!("Unknown action: {}", action)
+            },
+        }
+    }
+}
+
+fn play_music(playlist: String) {
+    let mut play_path = String::from("--playlist=");
+    play_path.push_str(&playlist);
+    // play_path.push_str("\"");
+    let process = match Command::new("mpv")
+        .args(&["--shuffle", play_path.as_str()])
+        .stdout(Stdio::piped())
+        .spawn() {
+            Err(why) => panic!("couldn't spawn mpv: {}", why),
+            Ok(process) => process
+    };
+
+    let mut s = String::new();
+    match process.stdout.unwrap().read_to_string(&mut s) {
+        Err(why) => panic!("Couldn't read ffmpeg stdout: {}", why),
+        Ok(_) => print!("{}", s), 
+    }
+}
+
+fn handle_arguments(args: Vec<String>) {
     let mut music_dir = String::from(get_home());
     music_dir.push_str("\\Music\\");
     let action = args[0].to_string();
-    println!("Arguments: {:?}", args);
+    //println!("Arguments: {:?}", args);
     match action.as_str() {
+        "play" => {
+            let mut playlist = String::from(get_home());
+                playlist.push_str("\\Documents\\playlists\\");
+                playlist.push_str(&args[1].to_string());
+                playlist.push_str(".txt");
+                play_music(playlist);
+        },
         "playlist" => {
-            let videos = get_videos(args[1].to_string());
+            let videos = get_videos(&args[1].to_string());
             write_playlist(videos, args[1].to_string());
         },
         "convert" => {
-            let videos = get_videos(args[1].to_string());
+            let videos = get_videos(&args[1].to_string());
             convert_mp4s(videos, args[1].to_string());
         },
         _=> println!("Unknown argument {}", args[0])
@@ -94,7 +169,7 @@ fn write_playlist(files: Vec<String>, tag: String) {
     }
 }
 
-fn get_videos(dir: String) -> Vec<String>{
+fn get_videos(dir: &String) -> Vec<String>{
     let mut video_dir = String::from(get_home());
     video_dir.push_str("\\Videos\\");
     video_dir.push_str(&dir);
