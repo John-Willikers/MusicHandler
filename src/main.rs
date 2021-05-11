@@ -31,7 +31,7 @@ fn interactive() {
                 println!("give me a tag to play BB");
                 io::stdin()
                     .read_line(&mut action)
-                    .expect("Failed to read argument");
+                    .expect("Failed to read tag");
                 let tag = remove_action(&action);
                 let mut playlist = String::from(get_home());
                 playlist.push_str("\\Documents\\playlists\\");
@@ -39,23 +39,23 @@ fn interactive() {
                 playlist.push_str(".txt");
                 play_music(playlist);
             },
-            "convert" | "3" => {
-                println!("give me a tag to convert beautiful");
-                io::stdin()
-                    .read_line(&mut action)
-                    .expect("Failed to read argument");
-                let tag = remove_action(&action);
-                let videos = get_videos(&tag);
-                convert_mp4s(videos, tag);
-            },
             "playlist" | "2" => {
                 println!("give me a tag to playlistify KING");
                 io::stdin()
                     .read_line(&mut action)
-                    .expect("Failed to read argument");
+                    .expect("Failed to read tag");
                 let tag = remove_action(&action);
                 let videos = get_videos(&tag);
                 write_playlist(videos, tag);
+            },
+            "convert" | "3" => {
+                println!("give me a tag to convert beautiful");
+                io::stdin()
+                    .read_line(&mut action)
+                    .expect("Failed to read tag");
+                let tag = remove_action(&action);
+                let videos = get_videos(&tag);
+                convert_mp4s(videos, tag);
             },
             "exit" | "4" => {
                 println!("Smell ya later nerd");
@@ -97,18 +97,18 @@ fn handle_arguments(args: Vec<String>) {
 fn play_music(playlist: String) {
     let mut play_path = String::from("--playlist=");
     play_path.push_str(&playlist);
-    // play_path.push_str("\"");
+
     let process = match Command::new("mpv")
         .args(&["--shuffle", play_path.as_str()])
         .stdout(Stdio::piped())
         .spawn() {
             Err(why) => panic!("couldn't spawn mpv: {}", why),
-            Ok(process) => process
+            Ok(process) => process,
     };
 
     let mut s = String::new();
     match process.stdout.unwrap().read_to_string(&mut s) {
-        Err(why) => panic!("Couldn't read ffmpeg stdout: {}", why),
+        Err(why) => panic!("Couldn't read mpv stdout: {}", why),
         Ok(_) => print!("{}", s), 
     }
 }
