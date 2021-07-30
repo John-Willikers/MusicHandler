@@ -170,7 +170,9 @@ fn write_playlist(files: Vec<String>, tag: String) {
         Ok(file) => file
     };
 
+    let files_length = files.len();
     let file_contents = files.join("\n");
+    println!("Files Count: {}", files_length);
     println!("contents: {}", file_contents);
 
     match file.write_all(file_contents.as_bytes()) {
@@ -183,7 +185,7 @@ fn get_videos(dir: &String) -> Vec<String>{
     let mut video_dir = String::from(get_home());
     video_dir.push_str("\\Videos\\");
     video_dir.push_str(&dir);
-    video_dir.push_str("\\*.mp4");
+    video_dir.push_str("\\*.*");
 
     return get_files(video_dir);
 }
