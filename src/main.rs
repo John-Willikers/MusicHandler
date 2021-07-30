@@ -70,6 +70,7 @@ fn interactive() {
 }
 
 fn handle_arguments(args: Vec<String>) {
+    hide_console_window();
     let mut music_dir = String::from(get_home());
     music_dir.push_str("\\Music\\");
     let action = args[0].to_string();
@@ -232,4 +233,18 @@ fn remove_action(x: &String) -> String {
     first_substring.push_str(&x[start..]);
     let final_substring = first_substring.replace("\r\n", "");
     return final_substring;
+}
+
+fn hide_console_window() {
+    use std::ptr;
+    use winapi::um::wincon::GetConsoleWindow;
+    use winapi::um::winuser::{ShowWindow, SW_HIDE};
+
+    let window = unsafe {GetConsoleWindow()};
+    // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
+    if window != ptr::null_mut() {
+        unsafe {
+            ShowWindow(window, SW_HIDE);
+        }
+    }
 }
