@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 home = "0.5.3"
 glob = "0.3.0"
+winapi = {version = "0.3", features = ["wincon", "winuser"]}
